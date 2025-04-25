@@ -2,6 +2,7 @@ import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/co
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
+import { LeaveType } from '@prisma/client';
 
 @Injectable()
 export class AuthService {
@@ -46,11 +47,12 @@ export class AuthService {
 
     // 创建初始的请假配额
     const currentYear = new Date().getFullYear();
-    const leaveTypes = ['ANNUAL', 'SICK', 'PERSONAL'];
-    const defaultQuotas = {
-      ANNUAL: 12,
-      SICK: 15,
-      PERSONAL: 5,
+    const leaveTypes: LeaveType[] = [LeaveType.ANNUAL, LeaveType.SICK, LeaveType.PERSONAL];
+    const defaultQuotas: Record<LeaveType, number> = {
+      [LeaveType.ANNUAL]: 12,
+      [LeaveType.SICK]: 15,
+      [LeaveType.PERSONAL]: 5,
+      [LeaveType.OTHER]: 0,
     };
 
     // 为新用户创建请假配额
