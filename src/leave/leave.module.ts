@@ -6,6 +6,5 @@ import { PrismaService } from '../prisma/prisma.service';
 @Module({
   controllers: [LeaveController],
   providers: [LeaveService, PrismaService],
-  exports: [LeaveService],
 })
 export class LeaveModule {} 

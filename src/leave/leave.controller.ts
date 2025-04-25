@@ -8,60 +8,49 @@ import {
   Request,
 } from '@nestjs/common';
 import { LeaveService } from './leave.service';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { LeaveType, RequestStatus } from '@prisma/client';
+import { CreateLeaveDto } from './dto/leave.dto';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { Role } from '@prisma/client';
 
 @Controller('leave')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class LeaveController {
   constructor(private readonly leaveService: LeaveService) {}
 
-  @Post('request')
-  async createLeaveRequest(
+  @Post()
+  create(@Request() req, @Body() createLeaveDto: CreateLeaveDto) {
+    return this.leaveService.create(req.user.id, createLeaveDto);
+  }
+
+  @Get()
+  findAll(@Request() req) {
+    return this.leaveService.findAll(req.user.id, req.user.role);
+  }
+
+  @Get(':id')
+  findOne(@Request() req, @Param('id') id: string) {
+    return this.leaveService.findOne(id, req.user.id, req.user.role);
+  }
+
+  @Post(':id/approve')
+  @Roles(Role.ADMIN)
+  approve(
     @Request() req,
-    @Body() data: {
-      type: LeaveType;
-      startDate: Date;
-      endDate: Date;
-      reason: string;
-    },
+    @Param('id') id: string,
+    @Body('comment') comment: string,
   ) {
-    return this.leaveService.createLeaveRequest(req.user.id, data);
+    return this.leaveService.approve(id, req.user.id, comment);
   }
 
-  @Get('my-requests')
-  async getMyLeaveRequests(@Request() req) {
-    return this.leaveService.getLeaveRequests(req.user.id);
-  }
-
-  @Get('pending')
-  async getPendingRequests() {
-    return this.leaveService.getPendingRequests();
-  }
-
-  @Post('request/:id/status')
-  async updateLeaveRequestStatus(
-    @Param('id') requestId: string,
+  @Post(':id/reject')
+  @Roles(Role.ADMIN)
+  reject(
     @Request() req,
-    @Body('status') status: RequestStatus,
+    @Param('id') id: string,
+    @Body('comment') comment: string,
   ) {
-    return this.leaveService.updateLeaveRequestStatus(
-      parseInt(requestId),
-      status,
-      req.user.id,
-    );
-  }
-
-  @Post('user/:id/days')
-  async updateUserLeaveDays(
-    @Param('id') userId: string,
-    @Request() req,
-    @Body('days') days: number,
-  ) {
-    return this.leaveService.updateUserLeaveDays(
-      parseInt(userId),
-      days,
-      req.user.id,
-    );
+    return this.leaveService.reject(id, req.user.id, comment);
   }
 } 

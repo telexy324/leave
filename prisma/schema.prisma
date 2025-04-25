@@ -14,28 +14,46 @@ datasource db {
 }
 
 model User {
-  id            Int       @id @default(autoincrement())
-  email         String    @unique
+  id            String         @id @default(uuid())
+  email         String         @unique
+  phone         String?        @unique
   password      String
   name          String
-  role          Role      @default(USER)
-  leaveDays     Int       @default(0)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  leaveRequests LeaveRequest[]
+  role          Role          @default(USER)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  leaveRequests Leave[]       @relation("UserLeaves")
+  approvedLeaves Leave[]      @relation("ApprovedBy")
+  leaveBalance  LeaveBalance[]
 }
 
-model LeaveRequest {
-  id          Int       @id @default(autoincrement())
-  userId      Int
-  user        User      @relation(fields: [userId], references: [id])
+model Leave {
+  id          String      @id @default(uuid())
+  userId      String
   type        LeaveType
   startDate   DateTime
   endDate     DateTime
   reason      String
-  status      RequestStatus @default(PENDING)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  status      LeaveStatus @default(PENDING)
+  proof       String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  user        User        @relation("UserLeaves", fields: [userId], references: [id])
+  approvedBy  User?       @relation("ApprovedBy", fields: [approverId], references: [id])
+  approverId  String?
+  comment     String?
+}
+
+model LeaveBalance {
+  id        String    @id @default(uuid())
+  userId    String
+  type      LeaveType
+  total     Float
+  used      Float     @default(0)
+  year      Int
+  user      User      @relation(fields: [userId], references: [id])
+
+  @@unique([userId, type, year])
 }
 
 enum Role {
@@ -47,9 +65,10 @@ enum LeaveType {
   ANNUAL
   SICK
   PERSONAL
+  OTHER
 }
 
-enum RequestStatus {
+enum LeaveStatus {
   PENDING
   APPROVED
   REJECTED
